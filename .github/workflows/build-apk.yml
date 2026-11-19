@@ -1,0 +1,65 @@
+name: Build MathMaster Pro APK
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Extract MathMaster Pro project archive
+        shell: bash
+        run: |
+          ARCHIVE='MathMaster-Pro-Android-Ready(1).zip'
+          test -f "$ARCHIVE" || { echo "Missing $ARCHIVE. Upload the ZIP to the repository root."; exit 1; }
+          mkdir -p project-source
+          unzip -q "$ARCHIVE" -d project-source
+          test -f project-source/package.json
+          test -f project-source/capacitor.config.ts
+          test -f project-source/android/gradlew
+          cp -a project-source/. .
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install JavaScript dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build web assets
+        run: npm run build
+
+      - name: Sync Capacitor Android project
+        run: npx cap sync android
+
+      - name: Build debug APK
+        shell: bash
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Verify APK exists
+        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MathMaster-Pro-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
