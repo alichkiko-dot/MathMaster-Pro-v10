@@ -17,7 +17,7 @@ jobs:
       - name: Extract MathMaster Pro project archive
         shell: bash
         run: |
-          ARCHIVE='MathMaster-Pro-Android-Ready(1).zip'
+          ARCHIVE='MathMaster-Pro-Android-Ready.zip'
           test -f "$ARCHIVE" || { echo "Missing $ARCHIVE. Upload the ZIP to the repository root."; exit 1; }
           mkdir -p project-source
           unzip -q "$ARCHIVE" -d project-source
